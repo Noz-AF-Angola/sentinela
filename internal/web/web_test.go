@@ -338,6 +338,9 @@ func TestLoginOverPlainHTTP(t *testing.T) {
 	if p := h.Get("Referrer-Policy"); p == "no-referrer" || p == "" {
 		t.Fatalf("Referrer-Policy %q makes browsers send Origin: null", p)
 	}
+	if _, body, _ := c.get("/login"); strings.Contains(body, "no-referrer") {
+		t.Fatal("a no-referrer meta tag overrides the header and makes browsers send Origin: null")
+	}
 	form := url.Values{"username": {"admin"}, "password": {pw}, "next": {"/"}}
 	if code, _, _ := c.post("/login", form, "Origin", c.srv.URL); code != http.StatusSeeOther {
 		t.Errorf("same-origin login without Sec-Fetch-Site: %d", code)

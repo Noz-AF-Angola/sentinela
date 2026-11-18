@@ -4,6 +4,12 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-18
+
+### Fixed
+
+- The login still failed over plain HTTP after 0.1.1: the page layout also carried a `<meta name="referrer" content="no-referrer">` tag, which overrides the response header. It is now `same-origin` as well, and a test checks both.
+
 ## [0.1.1] - 2026-11-18
 
 ### Fixed
