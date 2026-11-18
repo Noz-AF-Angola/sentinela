@@ -1,0 +1,52 @@
+{{define "content"}}
+<h1>Overview</h1>
+<div class="tiles">
+  <a class="tile" href="/decisions">
+    <span class="label">Active decisions</span>
+    {{if .Features.LAPI}}{{with .Data.DecisionsErr}}<span class="value err">error</span><span class="sub">{{short . 80}}</span>{{else}}<span class="value">{{.Data.ActiveDecisions}}</span><span class="sub">local, excluding the community blocklist</span>{{end}}{{else}}<span class="value muted">—</span><span class="sub">LAPI not configured</span>{{end}}
+  </a>
+  <a class="tile" href="/alerts">
+    <span class="label">Alerts, last 24 h</span>
+    {{if .Features.LAPI}}{{with .Data.AlertsErr}}<span class="value err">error</span><span class="sub">{{short . 80}}</span>{{else}}<span class="value">{{.Data.Alerts24h}}</span><span class="sub">scenarios that fired</span>{{end}}{{else}}<span class="value muted">—</span><span class="sub">LAPI not configured</span>{{end}}
+  </a>
+  {{with .Data.Metrics}}
+  <a class="tile" href="/appsec"><span class="label">AppSec requests</span><span class="value">{{num .TotalProcessed}}</span><span class="sub">since CrowdSec started</span></a>
+  <a class="tile" href="/appsec"><span class="label">AppSec blocked</span><span class="value">{{num .TotalBlocked}}</span><span class="sub">{{if .TotalProcessed}}{{pct (index .Engines 0).BlockRate}} of requests on {{(index .Engines 0).Engine}}{{else}}no traffic yet{{end}}</span></a>
+  {{else}}
+  <a class="tile" href="/appsec"><span class="label">AppSec</span>{{if .Data.MetricsErr}}<span class="value err">error</span><span class="sub">{{short .Data.MetricsErr 80}}</span>{{else}}<span class="value muted">—</span><span class="sub">metrics not configured</span>{{end}}</a>
+  {{end}}
+</div>
+
+<div class="cols">
+  <section class="card">
+    <h2>Top scenarios, last 24 h</h2>
+    {{with .Data.TopScenarios}}{{$max := (index . 0).Value}}
+    <table class="bars">{{range .}}<tr><td><a href="/alerts?scenario={{.Label}}">{{.Label}}</a></td><td class="n">{{num .Value}}</td><td class="bar"><meter min="0" max="100" value="{{bar .Value $max}}"></meter></td></tr>{{end}}</table>
+    {{else}}<p class="muted">Nothing fired in the last 24 hours.</p>{{end}}
+  </section>
+  <section class="card">
+    <h2>Countries, last 24 h</h2>
+    {{with .Data.TopCountries}}{{$max := (index . 0).Value}}
+    <table class="bars">{{range .}}<tr><td>{{.Label}}</td><td class="n">{{num .Value}}</td><td class="bar"><meter min="0" max="100" value="{{bar .Value $max}}"></meter></td></tr>{{end}}</table>
+    {{else}}<p class="muted">No data.</p>{{end}}
+  </section>
+</div>
+
+<section class="card">
+  <h2>Latest alerts</h2>
+  {{with .Data.Recent}}
+  <table><thead><tr><th>When</th><th>Scenario</th><th>Source</th><th>Decisions</th></tr></thead><tbody>
+  {{range .}}<tr><td title="{{when .CreatedAt}}"><a href="/alerts/{{.ID}}">{{ago .CreatedAt}}</a></td><td>{{.Scenario}}</td>
+  <td>{{with .Source}}<code>{{.Value}}</code> <span class="muted">{{.Cn}}</span>{{end}}</td>
+  <td>{{range .Decisions}}{{template "decision-chip" .}} {{end}}</td></tr>{{end}}
+  </tbody></table>
+  {{else}}<p class="muted">{{if .Features.LAPI}}No alerts.{{else}}Configure the LAPI to see alerts.{{end}}</p>{{end}}
+</section>
+
+{{with .Data.Metrics}}{{if .DecisionsOrigin}}
+<section class="card">
+  <h2>Active decisions by origin <span class="muted">(from metrics, including the community blocklist)</span></h2>
+  <table class="bars">{{$max := (index .DecisionsOrigin 0).Value}}{{range .DecisionsOrigin}}<tr><td>{{.Label}}</td><td class="n">{{num .Value}}</td><td class="bar"><meter min="0" max="100" value="{{bar .Value $max}}"></meter></td></tr>{{end}}</table>
+</section>
+{{end}}{{end}}
+{{end}}

@@ -1,0 +1,34 @@
+# Sentinela on a host where CrowdSec is installed from packages.
+# cscli is run through sudo with the rule in examples/sudoers/sentinela.
+[Unit]
+Description=Sentinela, web interface for CrowdSec
+After=network-online.target crowdsec.service
+Wants=network-online.target
+
+[Service]
+User=sentinela
+Group=sentinela
+EnvironmentFile=/etc/sentinela/sentinela.env
+ExecStart=/usr/local/bin/sentinela serve
+Restart=on-failure
+RestartSec=5
+
+# sudo needs to change user, so NoNewPrivileges must stay off. Everything
+# else is locked down.
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=false
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+ReadWritePaths=/etc/crowdsec -/var/lib/crowdsec /var/log -/var/lib/sudo /run
+
+[Install]
+WantedBy=multi-user.target

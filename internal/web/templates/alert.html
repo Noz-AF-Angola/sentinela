@@ -1,0 +1,44 @@
+{{define "content"}}
+<p><a href="/alerts">← Alerts</a></p>
+<h1>Alert {{.Data.ID}} <span class="muted">{{.Data.Scenario}}</span></h1>
+<div class="cols">
+<section class="card">
+  <h2>Summary</h2>
+  <dl class="kv">
+    <dt>Message</dt><dd>{{.Data.Message}}</dd>
+    <dt>Created</dt><dd>{{when .Data.CreatedAt}} ({{ago .Data.CreatedAt}})</dd>
+    <dt>Window</dt><dd>{{when .Data.StartAt}} → {{when .Data.StopAt}}</dd>
+    <dt>Events</dt><dd>{{.Data.EventsCount}}</dd>
+    <dt>Machine</dt><dd>{{.Data.MachineID}}</dd>
+    {{with .Data.ScenarioVersion}}<dt>Scenario version</dt><dd>{{.}}</dd>{{end}}
+    {{if .Data.Simulated}}<dt>Simulated</dt><dd>yes</dd>{{end}}
+  </dl>
+</section>
+<section class="card">
+  <h2>Source</h2>
+  {{with .Data.Source}}<dl class="kv">
+    <dt>Scope</dt><dd>{{.Scope}}</dd><dt>Value</dt><dd><code>{{.Value}}</code></dd>
+    {{with .Range}}<dt>Range</dt><dd><code>{{.}}</code></dd>{{end}}
+    {{with .Cn}}<dt>Country</dt><dd>{{.}}</dd>{{end}}
+    {{with .AsName}}<dt>AS</dt><dd>{{$.Data.Source.AsNumber}} {{.}}</dd>{{end}}
+  </dl>
+  {{if and $.CanEdit .IP}}<form method="post" action="/decisions" class="inline">
+    {{template "csrf" $.CSRF}}<input type="hidden" name="value" value="{{.IP}}"><input type="hidden" name="duration" value="24h">
+    <input type="hidden" name="reason" value="manual ban from alert {{$.Data.ID}}"><input type="hidden" name="back" value="/alerts/{{$.Data.ID}}">
+    <button class="small">Ban {{.IP}} for 24h</button></form>{{end}}
+  {{end}}
+</section>
+</div>
+<section class="card">
+  <h2>Decisions</h2>
+  {{with .Data.Decisions}}<table><thead><tr><th>ID</th><th>Type</th><th>Target</th><th>Origin</th><th>Duration</th>{{if $.CanEdit}}<th></th>{{end}}</tr></thead><tbody>
+  {{range .}}<tr><td class="n">{{.ID}}</td><td>{{template "decision-chip" .}}</td><td><code>{{.Value}}</code></td><td>{{.Origin}}</td><td>{{.Duration}}</td>
+  {{if $.CanEdit}}<td><form method="post" action="/decisions/{{.ID}}/delete" data-confirm="Delete decision {{.ID}}?">{{template "csrf" $.CSRF}}
+  <input type="hidden" name="back" value="/alerts/{{$.Data.ID}}"><button class="small danger">Delete</button></form></td>{{end}}</tr>{{end}}
+  </tbody></table>{{else}}<p class="muted">This alert has no decisions.</p>{{end}}
+</section>
+{{with .Data.Meta}}<section class="card"><h2>Context</h2><dl class="kv">{{range .}}<dt>{{.Key}}</dt><dd><code class="wrap">{{.Value}}</code></dd>{{end}}</dl></section>{{end}}
+{{with .Data.Events}}<section class="card"><h2>Events ({{len .}})</h2>
+{{range .}}<details><summary>{{when .Timestamp}}</summary><dl class="kv">{{range .Meta}}<dt>{{.Key}}</dt><dd><code class="wrap">{{.Value}}</code></dd>{{end}}</dl></details>{{end}}
+</section>{{end}}
+{{end}}

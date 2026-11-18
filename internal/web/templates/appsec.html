@@ -1,0 +1,37 @@
+{{define "content"}}
+<h1>AppSec (WAF)</h1>
+<p class="muted">Traffic seen by the CrowdSec Application Security component, usually fed by the reverse proxy's bouncer (Traefik, nginx…). Counters reset when CrowdSec restarts.</p>
+{{if not .Features.Metrics}}{{template "missing-metrics"}}{{else}}
+{{with .Data.MetricsErr}}<div class="flash error">{{.}}</div>{{end}}
+{{with .Data.Metrics}}
+{{if not .HasAppSec}}<div class="empty"><p><strong>No AppSec metrics yet.</strong></p><p>Either the AppSec component is not enabled, or no request has reached it since CrowdSec started. Check that an <code>appsec</code> acquisition is configured and that your bouncer has AppSec turned on.</p></div>{{else}}
+<div class="tiles">
+  <div class="tile"><span class="label">Requests analysed</span><span class="value">{{num .TotalProcessed}}</span></div>
+  <div class="tile"><span class="label">Requests blocked</span><span class="value">{{num .TotalBlocked}}</span></div>
+  <div class="tile"><span class="label">Rules that matched</span><span class="value">{{len .Rules}}</span></div>
+</div>
+<section class="card">
+  <h2>Engines</h2>
+  <table><thead><tr><th>Engine</th><th class="n">Processed</th><th class="n">Blocked</th><th class="n">Blocked %</th></tr></thead><tbody>
+  {{range .Engines}}<tr><td><code>{{.Engine}}</code></td><td class="n">{{num .Processed}}</td><td class="n">{{num .Blocked}}</td><td class="n">{{pct .BlockRate}}</td></tr>{{end}}
+  </tbody></table>
+</section>
+<section class="card">
+  <h2>Rules that matched</h2>
+  {{with .Rules}}<table class="bars"><thead><tr><th>Rule</th><th>Type</th><th>Engine</th><th class="n">Hits</th><th></th></tr></thead><tbody>
+  {{range .}}<tr><td>{{.Rule}}</td><td><span class="tag">{{.Type}}</span></td><td class="muted">{{.Engine}}</td><td class="n">{{num .Hits}}</td><td class="bar"><meter min="0" max="100" value="{{bar .Hits $.Data.MaxHits}}"></meter></td></tr>{{end}}
+  </tbody></table>{{else}}<p class="muted">No rule has matched yet.</p>{{end}}
+</section>
+{{end}}{{end}}
+{{end}}
+{{if .Features.LAPI}}
+<section class="card">
+  <h2>AppSec alerts, last 7 days</h2>
+  {{with .Data.AlertsErr}}<div class="flash error">{{.}}</div>{{end}}
+  {{with .Data.Alerts}}<table><thead><tr><th>When</th><th>Scenario</th><th>Source</th><th>Decisions</th></tr></thead><tbody>
+  {{range .}}<tr><td title="{{when .CreatedAt}}"><a href="/alerts/{{.ID}}">{{ago .CreatedAt}}</a></td><td>{{.Scenario}}</td><td>{{with .Source}}<code>{{.Value}}</code> <span class="muted">{{.Cn}}</span>{{end}}</td><td>{{range .Decisions}}{{template "decision-chip" .}} {{end}}</td></tr>{{end}}
+  </tbody></table>{{else}}<p class="muted">No AppSec or virtual-patching alerts in the last 7 days.</p>{{end}}
+</section>
+{{end}}
+<p class="muted small">Manage the rules themselves under <a href="/hub?type=appsec-rules">Hub → AppSec rules</a>. Most virtual-patching rules come with the <code>crowdsecurity/appsec-virtual-patching</code> collection.</p>
+{{end}}

@@ -1,0 +1,6 @@
+# name:role:bcrypt-hash[:totp-secret]
+# role is admin (can change things) or viewer (read-only).
+# Create a hash with:   read -rs PW && printf '%s' "$PW" | sentinela hash-password
+# Create a TOTP secret: sentinela totp-secret alice
+alice:admin:$2a$12$REPLACE.WITH.OUTPUT.OF.HASH-PASSWORD.xxxxxxxxxxxxxxxxxxxxxx
+bob:viewer:$2a$12$REPLACE.WITH.OUTPUT.OF.HASH-PASSWORD.xxxxxxxxxxxxxxxxxxxxxx

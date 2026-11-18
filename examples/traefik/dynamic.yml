@@ -1,0 +1,20 @@
+# Same setup with Traefik's file provider, for Sentinela running on the host
+# (systemd) and listening on 127.0.0.1:8090.
+http:
+  routers:
+    sentinela:
+      rule: Host(`crowdsec.example.com`)
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      middlewares: [sentinela-ipallow]
+      service: sentinela
+  middlewares:
+    sentinela-ipallow:
+      ipAllowList:
+        sourceRange: ["10.8.0.0/24", "192.0.2.0/28"]
+  services:
+    sentinela:
+      loadBalancer:
+        servers:
+          - url: http://127.0.0.1:8090

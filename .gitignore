@@ -1,0 +1,8 @@
+/sentinela
+/dist/
+*.test
+*.out
+.env
+users.txt
+secrets/
+.DS_Store

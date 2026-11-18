@@ -1,0 +1,49 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{{.Title}} · Sentinela</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<script src="/static/app.js" defer></script>
+</head>
+<body{{if not .User}} class="bare"{{end}}>
+{{if .User}}
+<aside class="side">
+  <a class="brand" href="/"><img src="/static/favicon.svg" alt="" width="22" height="22"> Sentinela</a>
+  <nav>
+    <a href="/" {{if eq .Active "dashboard"}}aria-current="page"{{end}}>Overview</a>
+    <a href="/decisions" {{if eq .Active "decisions"}}aria-current="page"{{end}}>Decisions</a>
+    <a href="/alerts" {{if eq .Active "alerts"}}aria-current="page"{{end}}>Alerts</a>
+    <a href="/appsec" {{if eq .Active "appsec"}}aria-current="page"{{end}}>AppSec (WAF)</a>
+    <span class="nav-group">Configuration</span>
+    <a href="/hub" {{if eq .Active "hub"}}aria-current="page"{{end}}>Hub</a>
+    <a href="/allowlists" {{if eq .Active "allowlists"}}aria-current="page"{{end}}>Allowlists</a>
+    <a href="/bouncers" {{if eq .Active "bouncers"}}aria-current="page"{{end}}>Bouncers</a>
+    <a href="/machines" {{if eq .Active "machines"}}aria-current="page"{{end}}>Machines</a>
+  </nav>
+  <div class="side-foot">
+    <div class="who"><strong>{{.User}}</strong> <span class="tag">{{.Role}}</span>{{if not .CanEdit}} <span class="tag muted">read-only</span>{{end}}</div>
+    <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="link">Log out</button></form>
+    <div class="ver">v{{.Version}}</div>
+  </div>
+</aside>
+{{end}}
+<main class="main">
+{{if .Banner}}<div class="banner">{{.Banner}}</div>{{end}}
+{{range .Flashes}}<div class="flash {{.Kind}}" role="status">{{.Text}}</div>{{end}}
+{{template "content" .}}
+</main>
+</body>
+</html>{{end}}
+
+{{define "missing-lapi"}}<div class="empty"><p><strong>The Local API is not configured.</strong></p>
+<p>Set <code>SENTINELA_LAPI_URL</code>, <code>SENTINELA_LAPI_MACHINE_ID</code> and <code>SENTINELA_LAPI_PASSWORD_FILE</code>. See the README, section “Connecting to CrowdSec”.</p></div>{{end}}
+{{define "missing-cscli"}}<div class="empty"><p><strong>cscli access is not configured.</strong></p>
+<p>Set <code>SENTINELA_CSCLI_MODE</code> to <code>exec</code> or <code>docker</code>. See the README, section “Connecting to CrowdSec”.</p></div>{{end}}
+{{define "missing-metrics"}}<div class="empty"><p><strong>The metrics endpoint is not configured.</strong></p>
+<p>Set <code>SENTINELA_METRICS_URL</code>, usually <code>http://crowdsec:6060/metrics</code>.</p></div>{{end}}
+{{define "csrf"}}<input type="hidden" name="csrf" value="{{.}}">{{end}}
+{{define "decision-chip"}}<span class="chip {{lower .Type}}">{{.Type}}</span>{{end}}

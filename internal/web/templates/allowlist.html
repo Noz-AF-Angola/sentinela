@@ -1,0 +1,24 @@
+{{define "content"}}
+<p><a href="/allowlists">← Allowlists</a></p>
+<h1>Allowlist <code>{{.Data.Name}}</code></h1>
+{{with .Data.Err}}<div class="flash error">{{.}}</div>{{end}}
+{{with .Data.List}}
+{{with .Description}}<p>{{.}}</p>{{end}}
+{{if and $.CanEdit (not .ConsoleManaged)}}<section class="card">
+  <h2>Add entries</h2>
+  <form method="post" action="/allowlists/{{.Name}}/items" class="grid-form">
+    {{template "csrf" $.CSRF}}
+    <label class="wide">IPs or ranges, one per line (max 100)<textarea name="values" rows="3" placeholder="192.0.2.15&#10;198.51.100.0/24" required></textarea></label>
+    <label>Expires after <input name="expiration" placeholder="never, or 12h, 30d"></label>
+    <label class="wide">Comment <input name="comment" maxlength="200" placeholder="who / why"></label>
+    <button class="primary">Add</button>
+  </form>
+</section>{{end}}
+{{if .ConsoleManaged}}<p class="flash info">This allowlist is managed from the CrowdSec Console and cannot be edited here.</p>{{end}}
+{{with .Items}}<table>
+<thead><tr><th>Value</th><th>Comment</th><th>Expires</th><th>Added</th>{{if $.CanEdit}}<th></th>{{end}}</tr></thead>
+<tbody>{{range .}}<tr><td><code>{{.Value}}</code></td><td>{{.Comment}}</td><td title="{{when .Expiration}}">{{if when .Expiration}}in {{left .Expiration}}{{else}}never{{end}}</td><td title="{{when .CreatedAt}}">{{ago .CreatedAt}}</td>
+{{if $.CanEdit}}<td>{{if not $.Data.List.ConsoleManaged}}<form method="post" action="/allowlists/{{$.Data.Name}}/items/remove" data-confirm="Remove {{.Value}}?">{{template "csrf" $.CSRF}}<input type="hidden" name="value" value="{{.Value}}"><button class="small danger">Remove</button></form>{{end}}</td>{{end}}</tr>{{end}}</tbody>
+</table>{{else}}<div class="empty"><p>This allowlist is empty.</p></div>{{end}}
+{{end}}
+{{end}}

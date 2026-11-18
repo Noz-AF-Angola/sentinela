@@ -1,0 +1,29 @@
+{{define "content"}}
+<h1>Allowlists</h1>
+<p class="muted">IPs and ranges that never get a decision, whatever the scenario. Allowlists are stored in the LAPI database and apply to every agent and to AppSec. Same as <code>cscli allowlists</code>.</p>
+{{if not .Features.CSCLI}}{{template "missing-cscli"}}{{else}}
+{{with .Data.Err}}<div class="flash error">{{.}}</div>{{end}}
+{{if .CanEdit}}<section class="card">
+  <h2>New allowlist</h2>
+  <form method="post" action="/allowlists" class="grid-form">
+    {{template "csrf" .CSRF}}
+    <label>Name <input name="name" pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]*" maxlength="64" placeholder="office" required></label>
+    <label class="wide">Description <input name="description" maxlength="200" placeholder="Office and VPN exits"></label>
+    <button class="primary">Create</button>
+  </form>
+</section>{{end}}
+{{with .Data.Rows}}<table>
+<thead><tr><th>Name</th><th>Description</th><th class="n">Entries</th><th>Updated</th><th></th></tr></thead>
+<tbody>{{range .}}<tr><td><a href="/allowlists/{{.Name}}"><strong>{{.Name}}</strong></a>{{if .ConsoleManaged}} <span class="tag">console</span>{{end}}</td><td>{{.Description}}</td><td class="n">{{.Size}}</td><td title="{{when .UpdatedAt}}">{{ago .UpdatedAt}}</td>
+<td>{{if and $.CanEdit (not .ConsoleManaged)}}<form method="post" action="/allowlists/{{.Name}}/delete" data-confirm="Delete allowlist {{.Name}} and all its entries?">{{template "csrf" $.CSRF}}<button class="small danger">Delete</button></form>{{end}}</td></tr>{{end}}</tbody>
+</table>{{else}}{{if not .Data.Err}}<div class="empty"><p>No allowlists yet.</p></div>{{end}}{{end}}
+
+<section class="card">
+  <h2>Parser whitelists</h2>
+  <p class="muted small">Older setups use whitelist <em>parsers</em> (for example <code>crowdsecurity/whitelists</code> for private ranges, or a local file in <code>parsers/s02-enrich/</code>). They only stop the local agent from raising alerts and are edited as YAML files on the host. Sentinela lists them here but does not edit them; move entries to an allowlist when you can.</p>
+  {{with .Data.Whitelists}}<table><thead><tr><th>Parser</th><th>Status</th><th>Description</th></tr></thead><tbody>
+  {{range .}}<tr><td><strong>{{.Name}}</strong></td><td><span class="chip ok">installed</span>{{if .Local}} <span class="tag">local</span>{{end}}</td><td>{{.Description}}</td></tr>{{end}}
+  </tbody></table>{{else}}<p class="muted">No whitelist parsers installed.</p>{{end}}
+</section>
+{{end}}
+{{end}}

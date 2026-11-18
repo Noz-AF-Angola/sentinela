@@ -1,0 +1,37 @@
+{{define "content"}}
+<h1>Hub</h1>
+<p class="muted">Collections, scenarios, parsers and AppSec rules from the CrowdSec Hub. Changes take effect after CrowdSec reloads.</p>
+{{if not .Features.CSCLI}}{{template "missing-cscli"}}{{else}}
+{{if .CanEdit}}<div class="actions">
+  <form method="post" action="/hub/update">{{template "csrf" .CSRF}}<input type="hidden" name="back" value="/hub?type={{.Data.Type}}"><button>Update hub index</button></form>
+  {{if .Features.Reload}}<form method="post" action="/reload" data-confirm="Reload CrowdSec now?">{{template "csrf" .CSRF}}<input type="hidden" name="back" value="/hub?type={{.Data.Type}}"><button class="primary">Reload CrowdSec</button></form>{{end}}
+</div>{{end}}
+{{with .Data.Err}}<div class="flash error">{{.}}</div>{{end}}
+{{with .Data.Tabs}}<nav class="tabs">{{range .}}<a href="/hub?type={{.Type}}&amp;show={{$.Data.Show}}" {{if eq .Type $.Data.Type}}aria-current="page"{{end}}>{{.Label}} <span class="count">{{.Installed}}</span>{{if .Updates}} <span class="chip captcha">{{.Updates}} update</span>{{end}}</a>{{end}}</nav>{{end}}
+<form method="get" class="filters">
+  <input type="hidden" name="type" value="{{.Data.Type}}">
+  <input name="q" value="{{.Data.Q}}" placeholder="search name or description">
+  <select name="show">
+    <option value="installed" {{if eq .Data.Show "installed"}}selected{{end}}>installed</option>
+    <option value="updates" {{if eq .Data.Show "updates"}}selected{{end}}>with updates</option>
+    <option value="all" {{if eq .Data.Show "all"}}selected{{end}}>all available</option>
+  </select>
+  <button>Show</button>
+</form>
+{{if eq .Data.Type "appsec-rules"}}<p class="muted small">Virtual-patching rules block known exploits (CVE-specific) in the AppSec component. Installing the <code>crowdsecurity/appsec-virtual-patching</code> collection keeps the whole set up to date.</p>{{end}}
+{{with .Data.Items}}<div class="scroll"><table>
+<thead><tr><th>Name</th><th>Status</th><th>Version</th><th>Description</th>{{if $.CanEdit}}<th></th>{{end}}</tr></thead>
+<tbody>{{range .}}<tr>
+<td><strong>{{.Name}}</strong></td>
+<td>{{if .Installed}}<span class="chip ok">installed</span>{{else}}<span class="tag muted">available</span>{{end}}{{if .UpdateAvailable}} <span class="chip captcha">update</span>{{end}}{{if .Tainted}} <span class="tag">tainted</span>{{end}}{{if .Local}} <span class="tag">local</span>{{end}}</td>
+<td>{{.LocalVersion}}</td>
+<td class="desc">{{short .Description 120}}</td>
+{{if $.CanEdit}}<td class="row-actions">
+{{if not .Installed}}<form method="post" action="/hub/action">{{template "csrf" $.CSRF}}<input type="hidden" name="type" value="{{.Type}}"><input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="action" value="install"><input type="hidden" name="back" value="/hub?type={{.Type}}&amp;show={{$.Data.Show}}"><button class="small">Install</button></form>{{end}}
+{{if .UpdateAvailable}}<form method="post" action="/hub/action">{{template "csrf" $.CSRF}}<input type="hidden" name="type" value="{{.Type}}"><input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="action" value="upgrade"><input type="hidden" name="back" value="/hub?type={{.Type}}&amp;show={{$.Data.Show}}"><button class="small">Upgrade</button></form>{{end}}
+{{if and .Installed (not .Local)}}<form method="post" action="/hub/action" data-confirm="Remove {{.Name}}?">{{template "csrf" $.CSRF}}<input type="hidden" name="type" value="{{.Type}}"><input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="action" value="remove"><input type="hidden" name="back" value="/hub?type={{.Type}}&amp;show={{$.Data.Show}}"><button class="small danger">Remove</button></form>{{end}}
+</td>{{end}}
+</tr>{{end}}</tbody></table></div>
+{{else}}{{if not .Data.Err}}<div class="empty"><p>Nothing to show{{if eq .Data.Show "installed"}}: no {{.Data.Label}} installed. Choose “all available” to browse the hub{{end}}.</p></div>{{end}}{{end}}
+{{end}}
+{{end}}

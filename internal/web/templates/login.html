@@ -1,0 +1,15 @@
+{{define "content"}}
+<div class="login">
+  <h1><img src="/static/favicon.svg" alt="" width="28" height="28"> Sentinela</h1>
+  <p class="muted">CrowdSec administration</p>
+  {{with .Data.Error}}<div class="flash error" role="alert">{{.}}</div>{{end}}
+  <form method="post" action="/login" class="stack">
+    <input type="hidden" name="next" value="{{.Data.Next}}">
+    <label>User name <input name="username" value="{{.Data.User}}" autocomplete="username" required autofocus></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <label>One-time code <span class="muted">(if enabled)</span>
+      <input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"></label>
+    <button class="primary">Log in</button>
+  </form>
+</div>
+{{end}}

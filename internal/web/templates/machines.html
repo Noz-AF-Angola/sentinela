@@ -1,0 +1,12 @@
+{{define "content"}}
+<h1>Machines</h1>
+<p class="muted">Log processors (agents) registered with the Local API. Same as <code>cscli machines list</code>.</p>
+{{if not .Features.CSCLI}}{{template "missing-cscli"}}{{else}}
+{{with .Data.Err}}<div class="flash error">{{.}}</div>{{end}}
+{{with .Data.Rows}}<div class="scroll"><table>
+<thead><tr><th>Name</th><th>Status</th><th>IP</th><th>Version</th><th>Last heartbeat</th><th>Auth</th><th>OS</th></tr></thead>
+<tbody>{{range .}}<tr><td><strong>{{.ID}}</strong></td><td>{{if .Validated}}<span class="chip ok">validated</span>{{else}}<span class="chip captcha">pending</span>{{end}}</td>
+<td><code>{{.IP}}</code></td><td>{{.Version}}</td><td title="{{when .LastHeartbeat}}">{{ago .LastHeartbeat}}</td><td>{{.AuthType}}</td><td>{{short .OS 40}}</td></tr>{{end}}</tbody>
+</table></div>{{else}}{{if not .Data.Err}}<div class="empty"><p>No machines registered.</p></div>{{end}}{{end}}
+{{end}}
+{{end}}

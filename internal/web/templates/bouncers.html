@@ -1,0 +1,13 @@
+{{define "content"}}
+<h1>Bouncers</h1>
+<p class="muted">Components that enforce decisions: firewall, reverse proxy, WAF. Same as <code>cscli bouncers list</code>.</p>
+{{if not .Features.CSCLI}}{{template "missing-cscli"}}{{else}}
+{{with .Data.Err}}<div class="flash error">{{.}}</div>{{end}}
+{{with .Data.Rows}}<div class="scroll"><table>
+<thead><tr><th>Name</th><th>Status</th><th>IP</th><th>Type</th><th>Version</th><th>Last pull</th><th>Auth</th></tr></thead>
+<tbody>{{range .}}<tr><td><strong>{{.Name}}</strong></td><td>{{if .Valid}}<span class="chip ok">valid</span>{{else}}<span class="chip ban">revoked</span>{{end}}</td>
+<td><code>{{.IP}}</code></td><td>{{.Type}}</td><td>{{.Version}}</td><td title="{{when .LastPull}}">{{ago .LastPull}}</td><td>{{.AuthType}}</td></tr>{{end}}</tbody>
+</table></div>{{else}}{{if not .Data.Err}}<div class="empty"><p>No bouncers registered.</p></div>{{end}}{{end}}
+<p class="muted small">A bouncer whose last pull is old has probably stopped working. Bouncers that use AppSec only show up here if they also pull decisions.</p>
+{{end}}
+{{end}}

@@ -1,0 +1,28 @@
+{{define "content"}}
+<h1>Alerts</h1>
+{{if not .Features.LAPI}}{{template "missing-lapi"}}{{else}}
+<form method="get" class="filters">
+  <input name="ip" value="{{.Data.IP}}" placeholder="IP or range">
+  <input name="scenario" value="{{.Data.Scenario}}" placeholder="exact scenario name">
+  <input name="since" value="{{.Data.Since}}" placeholder="since (24h, 7d)" size="8">
+  <input name="origin" value="{{.Data.Origin}}" placeholder="origin">
+  <input name="limit" value="{{.Data.Limit}}" placeholder="limit (100)" size="8">
+  <label class="check"><input type="checkbox" name="active" value="1" {{if .Data.Active}}checked{{end}}> with active decision</label>
+  <button>Filter</button>
+</form>
+{{with .Data.Err}}<div class="flash error">{{.}}</div>{{end}}
+{{with .Data.Rows}}
+<div class="scroll"><table>
+<thead><tr><th>ID</th><th>When</th><th>Scenario</th><th>Source</th><th>Country / AS</th><th>Events</th><th>Decisions</th></tr></thead>
+<tbody>{{range .}}<tr>
+  <td class="n"><a href="/alerts/{{.ID}}">{{.ID}}</a></td>
+  <td title="{{when .CreatedAt}}">{{ago .CreatedAt}}</td>
+  <td>{{.Scenario}}{{if .Simulated}} <span class="tag muted">simulated</span>{{end}}</td>
+  <td>{{with .Source}}<code>{{.Value}}</code>{{end}}</td>
+  <td>{{with .Source}}{{.Cn}} <span class="muted">{{short .AsName 30}}</span>{{end}}</td>
+  <td class="n">{{.EventsCount}}</td>
+  <td>{{range .Decisions}}{{template "decision-chip" .}} {{end}}</td>
+</tr>{{end}}</tbody></table></div>
+{{else}}{{if not .Data.Err}}<div class="empty"><p>No alerts match.</p></div>{{end}}{{end}}
+{{end}}
+{{end}}

@@ -1,0 +1,6 @@
+# /etc/sudoers.d/sentinela  (install with: visudo -cf this-file && install -m 0440 ...)
+# Sentinela may run cscli and reload CrowdSec as root, nothing else.
+# cscli itself is powerful (it can install hub items and delete bouncers),
+# which is why access to Sentinela must be protected; see the threat model.
+Defaults:sentinela !requiretty, env_reset
+sentinela ALL=(root) NOPASSWD: /usr/bin/cscli, /usr/bin/systemctl reload crowdsec

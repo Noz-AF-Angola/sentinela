@@ -1,0 +1,90 @@
+# Example: CrowdSec, Traefik and Sentinela on one Docker host.
+#
+# Only Traefik publishes ports. The CrowdSec LAPI (8080) and metrics (6060)
+# stay on the internal "crowdsec" network, and Sentinela is reachable only
+# through Traefik with the labels below.
+#
+# Before the first start, create the secrets (see README, "Docker Compose"):
+#   ./secrets/users.txt          sentinela users file
+#   ./secrets/lapi_password      password of the "sentinela" machine in CrowdSec
+
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.6.8
+    container_name: crowdsec
+    restart: unless-stopped
+    environment:
+      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules"
+    volumes:
+      - crowdsec-db:/var/lib/crowdsec/data
+      - crowdsec-config:/etc/crowdsec
+      - traefik-logs:/var/log/traefik:ro
+    networks: [crowdsec]
+
+  # Lets Sentinela run cscli inside the crowdsec container without mounting
+  # the Docker socket into Sentinela itself. Read the threat model in the
+  # README before enabling this: exec access to a container is powerful.
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.3.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      EXEC: 1
+      POST: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [docker-api]
+
+  sentinela:
+    image: ghcr.io/noz-af-angola/sentinela:0.1
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      SENTINELA_LISTEN: ":8080"
+      SENTINELA_AUTH_MODE: local
+      SENTINELA_USERS_FILE: /run/secrets/sentinela_users
+      SENTINELA_LAPI_URL: http://crowdsec:8080
+      SENTINELA_LAPI_MACHINE_ID: sentinela
+      SENTINELA_LAPI_PASSWORD_FILE: /run/secrets/sentinela_lapi_password
+      SENTINELA_METRICS_URL: http://crowdsec:6060/metrics
+      SENTINELA_CSCLI_MODE: docker
+      SENTINELA_DOCKER_HOST: tcp://socket-proxy:2375
+      SENTINELA_DOCKER_CONTAINER: crowdsec
+      # Traefik's address on the "web" network, so client IPs in the audit
+      # log come from X-Forwarded-For.
+      SENTINELA_TRUSTED_PROXIES: 172.30.0.0/24
+    secrets: [sentinela_users, sentinela_lapi_password]
+    networks: [crowdsec, docker-api, web]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: web
+      traefik.http.routers.sentinela.rule: Host(`crowdsec.example.com`)
+      traefik.http.routers.sentinela.entrypoints: websecure
+      traefik.http.routers.sentinela.tls.certresolver: letsencrypt
+      # Keep it off the open internet: VPN / office ranges only...
+      traefik.http.middlewares.sentinela-ipallow.ipallowlist.sourcerange: 10.8.0.0/24,192.0.2.0/28
+      # ...and/or put SSO in front (see examples/traefik/authelia-labels.yml).
+      traefik.http.routers.sentinela.middlewares: sentinela-ipallow
+      traefik.http.services.sentinela.loadbalancer.server.port: "8080"
+
+networks:
+  crowdsec:
+    internal: true
+  docker-api:
+    internal: true
+  web:
+    external: true   # the network Traefik is attached to
+
+volumes:
+  crowdsec-db:
+  crowdsec-config:
+  traefik-logs:
+    external: true
+
+secrets:
+  sentinela_users:
+    file: ./secrets/users.txt
+  sentinela_lapi_password:
+    file: ./secrets/lapi_password

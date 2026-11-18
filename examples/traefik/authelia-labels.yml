@@ -1,0 +1,27 @@
+# Sentinela behind Authelia (forward auth), in proxy mode.
+# Authelia authenticates the user (with its own 2FA) and passes Remote-User
+# and Remote-Groups. Sentinela trusts those headers only from Traefik.
+services:
+  sentinela:
+    environment:
+      SENTINELA_AUTH_MODE: proxy
+      SENTINELA_TRUSTED_PROXIES: 172.30.0.0/24     # Traefik on the "web" network only
+      SENTINELA_PROXY_USER_HEADER: Remote-User
+      SENTINELA_PROXY_GROUPS_HEADER: Remote-Groups
+      SENTINELA_PROXY_ADMIN_GROUP: crowdsec-admins  # others get read-only access
+      SENTINELA_PROXY_LOGOUT_URL: https://auth.example.com/logout
+    labels:
+      traefik.http.middlewares.authelia.forwardauth.address: http://authelia:9091/api/authz/forward-auth
+      traefik.http.middlewares.authelia.forwardauth.trustForwardHeader: "true"
+      traefik.http.middlewares.authelia.forwardauth.authResponseHeaders: Remote-User,Remote-Groups,Remote-Email,Remote-Name
+      traefik.http.routers.sentinela.middlewares: sentinela-ipallow,authelia
+
+# oauth2-proxy works the same way: use its X-Auth-Request-User and
+# X-Auth-Request-Groups headers (set --set-xauthrequest) and
+#   SENTINELA_PROXY_USER_HEADER=X-Auth-Request-User
+#   SENTINELA_PROXY_GROUPS_HEADER=X-Auth-Request-Groups
+#
+# Important: Traefik must be the only way to reach Sentinela. If the container
+# port is published or another service on the same network can reach it, the
+# headers could be forged. SENTINELA_TRUSTED_PROXIES limits which peers are
+# believed, so keep it as narrow as possible.

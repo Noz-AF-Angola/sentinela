@@ -1,0 +1,27 @@
+version: "2"
+linters:
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - noctx
+    - revive
+    - unconvert
+  settings:
+    gosec:
+      excludes:
+        - G104 # unhandled errors are caught by errcheck
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters: [gosec, noctx, errorlint, revive]
+formatters:
+  enable:
+    - gofmt
