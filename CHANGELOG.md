@@ -4,6 +4,12 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-18
+
+### Fixed
+
+- Login and every form failed with "cross-origin request detected" when the UI was served over plain HTTP (for example on a VPN address). The `Referrer-Policy: no-referrer` header made browsers send `Origin: null`, and without `Sec-Fetch-Site` (only sent over HTTPS) the cross-origin check rejected the request. The policy is now `same-origin`, so other sites still receive no referrer.
+
 ## [0.1.0] - 2026-11-18
 
 First public release.

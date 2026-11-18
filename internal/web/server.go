@@ -196,7 +196,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("X-Frame-Options", "DENY")
-	h.Set("Referrer-Policy", "no-referrer")
+	// same-origin, not no-referrer: with no-referrer browsers send "Origin: null" on
+	// form posts, and over plain HTTP (no Sec-Fetch-Site) the cross-origin check
+	// would then reject every login. Other sites still get no Referer.
+	h.Set("Referrer-Policy", "same-origin")
 	h.Set("Cross-Origin-Opener-Policy", "same-origin")
 	h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 	if s.opt.CookieSecure {

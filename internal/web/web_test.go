@@ -329,3 +329,20 @@ func TestSafeNext(t *testing.T) {
 		}
 	}
 }
+
+// A browser on plain HTTP sends no Sec-Fetch-Site, only Origin. The login
+// must still work, and the policy must let the browser send a real Origin.
+func TestLoginOverPlainHTTP(t *testing.T) {
+	c, _ := newClient(t, Options{})
+	_, _, h := c.get("/login")
+	if p := h.Get("Referrer-Policy"); p == "no-referrer" || p == "" {
+		t.Fatalf("Referrer-Policy %q makes browsers send Origin: null", p)
+	}
+	form := url.Values{"username": {"admin"}, "password": {pw}, "next": {"/"}}
+	if code, _, _ := c.post("/login", form, "Origin", c.srv.URL); code != http.StatusSeeOther {
+		t.Errorf("same-origin login without Sec-Fetch-Site: %d", code)
+	}
+	if code, _, _ := c.post("/login", form, "Origin", "http://192.0.2.10:8095"); code != http.StatusForbidden {
+		t.Errorf("cross-origin login: %d, want 403", code)
+	}
+}
