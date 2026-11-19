@@ -43,6 +43,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck -x instalar.sh scripts/release.sh
+      - name: syntax
+        run: bash -n instalar.sh
+
   image:
     runs-on: ubuntu-latest
     needs: test

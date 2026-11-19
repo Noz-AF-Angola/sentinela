@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinela - interface web para o CrowdSec</title>
+<meta name="description" content="Gira as decisões, os alertas, o WAF AppSec, o hub e as allowlists do CrowdSec a partir do browser. Software livre, instala-se com um comando.">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/"><img src="/assets/favicon.svg" alt="" width="26" height="26">Sentinela</a>
+  <nav aria-label="Páginas">
+    <a href="/" aria-current="page">Início</a>
+    <a href="/instalar.html">Instalar</a>
+    <a href="/documentacao.html">Documentação</a>
+    <a href="/comunidade.html">Comunidade</a>
+    <a href="/campanhas.html">Campanhas</a>
+    <a class="support" href="/apoiar.html">Apoiar</a>
+  </nav>
+</div></header>
+
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <h1>O CrowdSec no browser, sem abrir SSH.</h1>
+    <p class="lead">A Sentinela mostra quem o CrowdSec bloqueou e porquê, o que o WAF travou, e deixa desbloquear um IP, instalar uma regra ou gerir uma allowlist com dois cliques. Corre no seu servidor e só fala com a API local.</p>
+    <div class="cmd"><code id="cmd-home">curl -fsSL https://sentinela.nozaf.ao/instalar.sh | sudo bash</code><button type="button" data-copy="cmd-home">Copiar</button></div>
+    <p class="after">Prefere ler o script antes de o correr como root? <a href="/instalar.html#ler-primeiro">Faça assim</a>.</p>
+  </div>
+  <pre class="term" aria-label="Exemplo do que o instalador mostra"><span class="h">==&gt; CrowdSec</span>
+    <span class="y">✓</span> CrowdSec on the host (v1.8.2)
+    <span class="y">✓</span> Local API: http://127.0.0.1:8080
+    <span class="y">✓</span> metrics: http://127.0.0.1:6060/metrics
+
+<span class="h">==&gt; Sentinela 0.2.0 (amd64)</span>
+    <span class="y">✓</span> signature of SHA256SUMS: valid (release key 2206DA328A608A83)
+    <span class="y">✓</span> SHA256 of sentinela-linux-amd64 and instalar.sh: match
+
+<span class="h">==&gt; System user, configuration and Local API machine</span>
+    <span class="y">✓</span> Local API machine 'sentinela' registered <span class="d">(password never shown)</span>
+    <span class="y">✓</span> sudo limited to cscli and 'systemctl reload crowdsec'
+
+<span class="h">==&gt; Account</span>
+    <span class="d">Require a one-time code (TOTP)? [Y/n]</span> y
+    <span class="y">✓</span> account 'admin' (admin) saved
+
+<span class="h">==&gt; Service</span>
+    <span class="y">✓</span> running on http://127.0.0.1:8095<span class="c"></span></pre>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="cols">
+    <div>
+      <h3>O que bloqueou, e porquê</h3>
+      <p class="soft">Decisões activas, alertas com os eventos e o contexto, e o que o componente AppSec analisou e bloqueou, regra a regra.</p>
+    </div>
+    <div>
+      <h3>As tarefas de todos os dias</h3>
+      <p class="soft">Bloquear ou desbloquear um IP ou uma gama, instalar colecções e regras de virtual patching, gerir allowlists, recarregar o CrowdSec.</p>
+    </div>
+    <div>
+      <h3>Fechada por omissão</h3>
+      <p class="soft">Escuta só em 127.0.0.1 ou na VPN. Palavra-passe com bcrypt e TOTP, ou atrás do Authelia. Cada alteração fica registada.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap prose">
+  <h2>Porque existe</h2>
+  <p>Quase tudo no CrowdSec passa pelo <code>cscli</code>. Um cliente liga a dizer que o IP do escritório foi bloqueado: liga-se a VPN, entra-se por SSH, procura-se a decisão, apaga-se. Para saber se o WAF está a travar alguma coisa, mais um comando. A Sentinela junta esse trabalho numa página, no próprio servidor, sem serviço externo e sem base de dados própria.</p>
+  <p>É um único binário em Go, de código aberto (licença MIT), feito em Angola por <a href="https://github.com/Noz-AF-Angola">Gelson Fernandes</a>.</p>
+  <p class="soft" lang="en">In English: Sentinela is a small, self-hosted web interface for CrowdSec. Read the <a href="https://github.com/Noz-AF-Angola/sentinela#readme">README on GitHub</a>.</p>
+</div></section>
+
+<section class="band teaser" id="campanha-destaque" aria-live="polite"><div class="wrap">
+  <h2>Campanha em curso</h2>
+  <div class="slot"></div>
+  <p><a href="/campanhas.html">Ver todas as campanhas</a></p>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <span>Sentinela, software livre (MIT). Não é afiliada à CrowdSec SAS.</span>
+  <nav aria-label="Ligações">
+    <a href="https://github.com/Noz-AF-Angola/sentinela">GitHub</a>
+    <a href="https://github.com/Noz-AF-Angola/sentinela/releases">Versões</a>
+    <a href="/chave.asc">Chave de assinatura</a>
+    <a href="https://github.com/Noz-AF-Angola/sentinela/security/advisories/new">Reportar falha de segurança</a>
+  </nav>
+</div></footer>
+</body>
+</html>

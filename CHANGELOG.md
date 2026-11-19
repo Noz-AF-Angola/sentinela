@@ -4,6 +4,19 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-19
+
+### Added
+
+- One-command installer, `instalar.sh` (`curl -fsSL https://sentinela.nozaf.ao/instalar.sh | sudo bash`). It finds CrowdSec on the host or in Docker, asks before installing anything missing, verifies the OpenPGP signature of `SHA256SUMS` and the checksum of every file, listens on 127.0.0.1 (or a VPN address) by default, creates the first account with TOTP, and installs itself as `sentinela-admin` with `update`, `user`, `status` and `uninstall` commands.
+- Release files signed with the maintainer's OpenPGP key (`docs/release-key.asc`) and built by `scripts/release.sh`: binaries for linux/amd64 and linux/arm64, `instalar.sh`, `SHA256SUMS`, `SHA256SUMS.asc`.
+- Optional, anonymous install telemetry in the installer, off unless the operator answers yes. See README, "Telemetry".
+- "Support the project" links in the interface, the README and `.github/FUNDING.yml`.
+
+### Fixed
+
+- Decisions and alerts failed with "incorrect Username or Password" against a real CrowdSec: the Local API refuses a watcher login whose User-Agent is not `name/version`. Sentinela now sends `sentinela/<version>`.
+
 ## [0.1.2] - 2026-11-18
 
 ### Fixed

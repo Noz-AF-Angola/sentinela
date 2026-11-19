@@ -116,6 +116,7 @@ func serve(logger *slog.Logger) error {
 		if err != nil {
 			return err
 		}
+		c.SetVersion(version)
 		opt.LAPI = c
 	}
 	if cfg.MetricsURL != "" {

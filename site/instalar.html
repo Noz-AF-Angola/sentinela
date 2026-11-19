@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instalar - Sentinela</title>
+<meta name="description" content="Instalar a Sentinela com um comando, verificar a assinatura, actualizar e desinstalar.">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/"><img src="/assets/favicon.svg" alt="" width="26" height="26">Sentinela</a>
+  <nav aria-label="Páginas">
+    <a href="/">Início</a>
+    <a href="/instalar.html" aria-current="page">Instalar</a>
+    <a href="/documentacao.html">Documentação</a>
+    <a href="/comunidade.html">Comunidade</a>
+    <a href="/campanhas.html">Campanhas</a>
+    <a class="support" href="/apoiar.html">Apoiar</a>
+  </nav>
+</div></header>
+
+<main class="page"><div class="wrap">
+  <h1>Instalar</h1>
+  <p class="lead">No servidor onde corre o CrowdSec, como root. Funciona em Debian, Ubuntu, RHEL e derivados, e openSUSE, em amd64 ou arm64, com systemd.</p>
+
+  <div class="cmd prose"><code id="cmd-install">curl -fsSL https://sentinela.nozaf.ao/instalar.sh | sudo bash</code><button type="button" data-copy="cmd-install">Copiar</button></div>
+
+  <section class="band first">
+    <h2>O que o instalador faz</h2>
+    <ol class="steps">
+      <li><strong>Encontra o CrowdSec</strong>Instalado por pacotes no próprio servidor, ou num contentor <code>crowdsecurity/crowdsec</code>. Se não houver, pergunta antes de o instalar a partir do repositório oficial do CrowdSec. Diz também se há Docker; não é preciso quando o CrowdSec corre no servidor.</li>
+      <li><strong>Descarrega e verifica a versão</strong>Do GitHub, para a sua arquitectura. O ficheiro <code>SHA256SUMS</code> tem de ter uma assinatura OpenPGP válida da chave do projecto, e cada ficheiro tem de corresponder ao seu SHA256. Se alguma verificação falhar, não instala nada.</li>
+      <li><strong>Prepara o sistema</strong>Cria o utilizador <code>sentinela</code>, regista uma máquina na API local (a palavra-passe vai directamente para um ficheiro e nunca aparece no ecrã) e uma regra de sudo que só permite <code>cscli</code> e <code>systemctl reload crowdsec</code>.</li>
+      <li><strong>Escolhe onde escutar</strong>Por omissão em <code>127.0.0.1:8095</code>. Se encontrar uma VPN (WireGuard, Tailscale) oferece o endereço dela. Um endereço público é recusado, a não ser que o peça explicitamente.</li>
+      <li><strong>Cria a primeira conta</strong>Pede a palavra-passe sem a mostrar e configura o TOTP, com QR code quando há <code>qrencode</code>.</li>
+      <li><strong>Arranca e confirma</strong>Activa o serviço <code>sentinela</code> e verifica que responde.</li>
+    </ol>
+    <p class="prose">Pode corrê-lo de novo quando quiser: repara o que faltar e mantém as contas e a configuração.</p>
+  </section>
+
+  <section class="band" id="ler-primeiro">
+    <h2>Ler antes de correr</h2>
+    <p class="prose">Correr um script da Internet como root pede confiança. Se preferir, descarregue-o, leia-o e só depois corra:</p>
+    <pre class="block prose"><code>curl -fsSLO https://github.com/Noz-AF-Angola/sentinela/releases/latest/download/instalar.sh
+less instalar.sh
+sudo bash instalar.sh</code></pre>
+    <p class="prose">Para verificar a assinatura dos ficheiros de uma versão à mão:</p>
+    <pre class="block prose"><code>curl -fsSL https://sentinela.nozaf.ao/chave.asc | gpg --import
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c --ignore-missing SHA256SUMS</code></pre>
+    <dl class="facts prose">
+      <dt>Impressão digital</dt><dd><code>5493 6EE1 C783 51E9 FE49 29A0 2206 DA32 8A60 8A83</code></dd>
+      <dt>Chave</dt><dd><a href="/chave.asc">chave.asc</a>, também no repositório em <code>docs/release-key.asc</code></dd>
+    </dl>
+  </section>
+
+  <section class="band">
+    <h2>Depois de instalar</h2>
+    <p class="prose">O instalador fica no servidor como <code>sentinela-admin</code>:</p>
+    <pre class="block prose"><code>sudo sentinela-admin update              # última versão, com as mesmas verificações
+sudo sentinela-admin user ana viewer     # nova conta, ou nova palavra-passe e TOTP
+sudo sentinela-admin status
+sudo sentinela-admin uninstall           # SENTINELA_PURGE=1 apaga também /etc/sentinela</code></pre>
+    <p class="prose">Se escuta em 127.0.0.1, abra-a por um túnel SSH a partir do seu computador:</p>
+    <pre class="block prose"><code>ssh -N -L 8095:127.0.0.1:8095 utilizador@servidor
+# e depois http://localhost:8095</code></pre>
+  </section>
+
+  <section class="band">
+    <h2>Opções</h2>
+    <p class="prose">São variáveis de ambiente. Com <code>curl | sudo bash</code>, ponha-as depois do <code>sudo</code>, por exemplo <code>curl -fsSL … | sudo SENTINELA_TELEMETRIA=0 bash</code>.</p>
+    <dl class="facts prose">
+      <dt><code>SENTINELA_VERSION</code></dt><dd>versão a instalar; por omissão a mais recente</dd>
+      <dt><code>SENTINELA_LISTEN</code></dt><dd>endereço da interface, por exemplo <code>10.0.0.1:8095</code></dd>
+      <dt><code>SENTINELA_YES=1</code></dt><dd>instala dependências em falta sem perguntar (nunca responde à telemetria)</dd>
+      <dt><code>SENTINELA_TELEMETRIA=0</code></dt><dd>não pergunta nem envia a contagem anónima</dd>
+      <dt><code>SENTINELA_FROM</code></dt><dd>instala a partir de uma pasta com os ficheiros da versão, para servidores sem Internet</dd>
+      <dt><code>SENTINELA_PURGE=1</code></dt><dd>com <code>uninstall</code>, apaga também as contas</dd>
+    </dl>
+  </section>
+
+  <section class="band" id="telemetria">
+    <h2>Telemetria</h2>
+    <div class="prose">
+      <p>No fim de uma instalação feita num terminal, o instalador pergunta se pode enviar <strong>uma mensagem anónima</strong>, para o projecto saber quantos servidores o usam. A resposta por omissão é não. Sem terminal, ou com <code>SENTINELA_TELEMETRIA=0</code>, não pergunta nem envia nada. A interface web nunca envia nada.</p>
+      <p>A mensagem inteira é esta, enviada para <code>https://apoio.nozaf.ao/v1/instalacoes</code>:</p>
+      <pre class="block"><code>{"id":"0b5c6e1e-3c1f-4a52-9d9e-2f8a7b1c4d00","projecto":"sentinela","versao":"0.2.0","so":"ubuntu-24.04","arq":"amd64","evento":"instalar"}</code></pre>
+      <p>O <code>id</code> é um UUID aleatório criado no seu servidor quando aceita, guardado em <code>/etc/sentinela/id</code>. Não leva endereço IP, nome da máquina, domínio nem configuração, e o serviço que a recebe não guarda o IP. Para deixar de enviar: <code>echo nao | sudo tee /etc/sentinela/telemetria</code>.</p>
+    </div>
+  </section>
+
+  <section class="band">
+    <h2>Outras formas</h2>
+    <p class="prose">Com Docker Compose (imagem <code>ghcr.io/noz-af-angola/sentinela</code>, sem shell, utilizador não-root) ou à mão com systemd: veja a secção <a href="https://github.com/Noz-AF-Angola/sentinela#installation">Installation do README</a>, que tem os exemplos para Traefik, Authelia e sudo.</p>
+  </section>
+</div></main>
+
+<footer><div class="wrap">
+  <span>Sentinela, software livre (MIT). Não é afiliada à CrowdSec SAS.</span>
+  <nav aria-label="Ligações">
+    <a href="https://github.com/Noz-AF-Angola/sentinela">GitHub</a>
+    <a href="https://github.com/Noz-AF-Angola/sentinela/releases">Versões</a>
+    <a href="/chave.asc">Chave de assinatura</a>
+    <a href="https://github.com/Noz-AF-Angola/sentinela/security/advisories/new">Reportar falha de segurança</a>
+  </nav>
+</div></footer>
+</body>
+</html>

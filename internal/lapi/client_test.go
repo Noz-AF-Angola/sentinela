@@ -21,6 +21,10 @@ func (f *fakeLAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/v1/watchers/login" {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
+		// Like CrowdSec: a User-Agent without "/version" is refused as bad credentials.
+		if ua := r.Header.Get("User-Agent"); !strings.HasPrefix(ua, "sentinela/") || len(ua) <= len("sentinela/") {
+			body = nil
+		}
 		if body["machine_id"] != "sentinela" || body["password"] != "s3cret" {
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"message":"incorrect Username or Password"}`))

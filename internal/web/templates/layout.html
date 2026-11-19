@@ -27,7 +27,7 @@
   <div class="side-foot">
     <div class="who"><strong>{{.User}}</strong> <span class="tag">{{.Role}}</span>{{if not .CanEdit}} <span class="tag muted">read-only</span>{{end}}</div>
     <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="link">Log out</button></form>
-    <div class="ver">v{{.Version}}</div>
+    <div class="ver">v{{.Version}} · <a href="https://apoio.nozaf.ao/?projecto=sentinela" target="_blank" rel="noopener">Support the project</a></div>
   </div>
 </aside>
 {{end}}

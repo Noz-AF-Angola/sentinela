@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentação - Sentinela</title>
+<meta name="description" content="Como a Sentinela fala com o CrowdSec, configuração, contas, segurança e resolução de problemas.">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/"><img src="/assets/favicon.svg" alt="" width="26" height="26">Sentinela</a>
+  <nav aria-label="Páginas">
+    <a href="/">Início</a>
+    <a href="/instalar.html">Instalar</a>
+    <a href="/documentacao.html" aria-current="page">Documentação</a>
+    <a href="/comunidade.html">Comunidade</a>
+    <a href="/campanhas.html">Campanhas</a>
+    <a class="support" href="/apoiar.html">Apoiar</a>
+  </nav>
+</div></header>
+
+<main class="page"><div class="wrap">
+  <h1>Documentação</h1>
+  <p class="lead">O essencial para pôr a Sentinela a trabalhar e a mantê-la segura. A referência completa, em inglês, está no <a href="https://github.com/Noz-AF-Angola/sentinela#readme">README</a>.</p>
+  <ul class="toc">
+    <li><a href="#fontes">Como fala com o CrowdSec</a></li>
+    <li><a href="#configuracao">Configuração</a></li>
+    <li><a href="#contas">Contas</a></li>
+    <li><a href="#seguranca">Segurança</a></li>
+    <li><a href="#problemas">Problemas comuns</a></li>
+  </ul>
+  <div class="prose">
+    <h2 id="fontes">Como fala com o CrowdSec</h2>
+    <p>Usa três fontes, todas opcionais. Uma página cuja fonte falta diz o que configurar em vez de falhar.</p>
+    <dl class="facts">
+      <dt>API local (LAPI)</dt><dd>decisões e alertas, com uma conta de máquina (<code>cscli machines add</code>)</dd>
+      <dt>Métricas Prometheus</dt><dd>contadores do AppSec e regras que dispararam, em <code>:6060/metrics</code></dd>
+      <dt><code>cscli</code></dt><dd>hub, allowlists, bouncers, máquinas e reload, corrido com sudo ou dentro do contentor</dd>
+    </dl>
+    <p>Os comandos do <code>cscli</code> são executados a partir de uma lista fixa, sem shell, e todos os valores (IPs, nomes, durações, comentários) são validados antes.</p>
+
+    <h2 id="configuracao">Configuração</h2>
+    <p>Com o instalador, a configuração fica em <code>/etc/sentinela/sentinela.env</code>. Depois de mudar alguma coisa: <code>sudo systemctl restart sentinela</code>. As variáveis mais usadas:</p>
+    <dl class="facts">
+      <dt><code>SENTINELA_LISTEN</code></dt><dd>endereço e porta, por omissão <code>127.0.0.1:8095</code></dd>
+      <dt><code>SENTINELA_READ_ONLY</code></dt><dd><code>true</code> para só consultar</dd>
+      <dt><code>SENTINELA_CSCLI_MODE</code></dt><dd><code>exec</code>, <code>docker</code> ou <code>none</code></dd>
+      <dt><code>SENTINELA_COOKIE_SECURE</code></dt><dd><code>true</code> atrás de um proxy com TLS</dd>
+      <dt><code>SENTINELA_AUTH_MODE</code></dt><dd><code>local</code>, ou <code>proxy</code> atrás do Authelia ou do oauth2-proxy</dd>
+    </dl>
+    <p>A lista completa está na secção <a href="https://github.com/Noz-AF-Angola/sentinela#configuration">Configuration</a>.</p>
+
+    <h2 id="contas">Contas</h2>
+    <p>Há dois papéis: <code>admin</code>, que altera, e <code>viewer</code>, que só consulta. Para criar uma conta, ou trocar a palavra-passe e o TOTP de uma existente:</p>
+    <pre class="block"><code>sudo sentinela-admin user ana viewer</code></pre>
+    <p>As palavras-passe são guardadas com bcrypt. O TOTP funciona com qualquer app autenticadora (Aegis, 2FAS, Google Authenticator, 1Password).</p>
+
+    <h2 id="seguranca">Segurança</h2>
+    <p>Quem entra na Sentinela pode desbloquear atacantes e remover regras. Por isso:</p>
+    <ul>
+      <li>não a exponha na Internet, nem a LAPI: use 127.0.0.1 com túnel SSH, uma VPN, ou um proxy com SSO;</li>
+      <li>active o TOTP, ou o 2FA do SSO;</li>
+      <li>se só precisa de decisões, alertas e métricas, use <code>SENTINELA_CSCLI_MODE=none</code>;</li>
+      <li>com o CrowdSec em Docker, lembre-se de que o acesso ao socket do Docker equivale a root.</li>
+    </ul>
+    <p>Cada alteração (quem, de que IP, o quê) fica no registo do serviço: <code>journalctl -u sentinela</code>. O modelo de ameaças está em <a href="https://github.com/Noz-AF-Angola/sentinela#security-and-threat-model">Security and threat model</a>. Falhas de segurança reportam-se <a href="https://github.com/Noz-AF-Angola/sentinela/security/advisories/new">em privado</a>.</p>
+
+    <h2 id="problemas">Problemas comuns</h2>
+    <h3>“incorrect Username or Password” nas decisões</h3>
+    <p>Versões anteriores à 0.2.0 enviavam um User-Agent que o CrowdSec recusa. Actualize: <code>sudo sentinela-admin update</code>.</p>
+    <h3>O CrowdSec não arranca depois de instalado</h3>
+    <p>Normalmente a porta 8080 já está ocupada. Mude <code>listen_uri</code> em <code>/etc/crowdsec/config.yaml</code> e <code>url</code> em <code>/etc/crowdsec/local_api_credentials.yaml</code>, reinicie o CrowdSec e corra o instalador de novo.</p>
+    <h3>A página AppSec está vazia</h3>
+    <p>O componente AppSec não está activo, ou ainda não recebeu pedidos desde que o CrowdSec arrancou. Os contadores vêm do Prometheus e voltam a zero quando o CrowdSec reinicia.</p>
+    <h3>“cross-origin request detected” ao entrar</h3>
+    <p>Acontecia nas versões 0.1.0 e 0.1.1 quando a interface era servida por HTTP simples. Actualize para a versão mais recente.</p>
+  </div>
+</div></main>
+
+<footer><div class="wrap">
+  <span>Sentinela, software livre (MIT). Não é afiliada à CrowdSec SAS.</span>
+  <nav aria-label="Ligações">
+    <a href="https://github.com/Noz-AF-Angola/sentinela">GitHub</a>
+    <a href="https://github.com/Noz-AF-Angola/sentinela/releases">Versões</a>
+    <a href="/chave.asc">Chave de assinatura</a>
+    <a href="https://github.com/Noz-AF-Angola/sentinela/security/advisories/new">Reportar falha de segurança</a>
+  </nav>
+</div></footer>
+</body>
+</html>

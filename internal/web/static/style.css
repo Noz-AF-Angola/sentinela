@@ -42,6 +42,8 @@ h2 { font-size: 15px; margin: 0 0 10px; font-weight: 600; }
 .side-foot .who { margin-bottom: 4px; }
 .side-foot .tag { background: #222c3b; color: var(--side-ink); }
 .ver { color: #6b7789; font-size: 11.5px; margin-top: 6px; }
+.ver a { color: #8b97a8; }
+.login p.small { margin-top: 18px; text-align: center; }
 
 .main { padding: 24px 28px 48px; max-width: 1400px; width: 100%; min-width: 0; }
 .banner { background: var(--warn-bg); color: var(--warn); padding: 8px 12px; border-radius: var(--radius); margin-bottom: 14px; font-weight: 500; }

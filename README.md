@@ -51,6 +51,42 @@ This starts a server on `127.0.0.1:8080` with fake data and prints a one-off pas
 
 ## Installation
 
+### One command (recommended)
+
+On the server that runs CrowdSec (Debian, Ubuntu, RHEL-like, openSUSE; amd64 or arm64; systemd):
+
+```bash
+curl -fsSL https://sentinela.nozaf.ao/instalar.sh | sudo bash
+```
+
+Prefer to read a script before running it as root? Do that:
+
+```bash
+curl -fsSLO https://github.com/Noz-AF-Angola/sentinela/releases/latest/download/instalar.sh
+less instalar.sh
+sudo bash instalar.sh
+```
+
+What the installer does, in order:
+
+1. Finds CrowdSec: installed from packages on the host, or running in a `crowdsecurity/crowdsec` container. If there is none, it asks before installing it from CrowdSec's official package repository. It reports whether Docker is present; Docker is not needed when CrowdSec runs on the host.
+2. Downloads the release for your architecture from GitHub and checks it: `SHA256SUMS` must carry a valid OpenPGP signature from the release key (fingerprint `5493 6EE1 C783 51E9 FE49 29A0 2206 DA32 8A60 8A83`, also in [`docs/release-key.asc`](docs/release-key.asc)), and every file must match its checksum. If either check fails, nothing is installed.
+3. Creates a `sentinela` system user, registers a Local API machine (its password goes straight to a file, never to the screen) and a `sudo` rule limited to `cscli` and `systemctl reload crowdsec`. With CrowdSec in Docker it asks before adding the user to the `docker` group, and explains why that is equivalent to root.
+4. Listens on **127.0.0.1:8095** by default. If it finds a VPN interface (WireGuard, Tailscale) it offers its address instead. A public address is refused unless you set `SENTINELA_ALLOW_PUBLIC=1`.
+5. Asks for the first administrator's password and sets up TOTP, shown as a QR code when `qrencode` is available.
+6. Starts the `sentinela` systemd service and checks that it answers.
+
+Running it again is safe: it repairs what is missing and keeps your accounts and configuration. The script stays on the server as `sentinela-admin`:
+
+```bash
+sudo sentinela-admin update          # latest release, same checks
+sudo sentinela-admin user alice viewer   # new account, or reset password and TOTP
+sudo sentinela-admin status
+sudo sentinela-admin uninstall       # SENTINELA_PURGE=1 also deletes /etc/sentinela
+```
+
+Options are environment variables: `SENTINELA_VERSION`, `SENTINELA_LISTEN`, `SENTINELA_YES=1` (install missing dependencies without asking), `SENTINELA_TELEMETRIA=0`, `SENTINELA_FROM=DIR` (install from a folder holding the release files, for servers without Internet access). With `curl | sudo bash` set them after `sudo`, for example `curl -fsSL … | sudo SENTINELA_TELEMETRIA=0 bash`.
+
 ### Docker Compose
 
 The image is `ghcr.io/noz-af-angola/sentinela`. It is built on distroless, runs as a non-root user, and has no shell.
@@ -175,6 +211,26 @@ Reporting vulnerabilities: see [SECURITY.md](SECURITY.md).
 - AppSec counters come from Prometheus and reset when CrowdSec restarts. For history, scrape the same endpoint with Prometheus/Grafana.
 - `cscli` output changes a little between CrowdSec releases. Sentinela was written against the 1.6 series and reads fields under their known names; if something shows up empty, please open an issue with the JSON output of the command.
 
+## Telemetry
+
+The installer can send **one anonymous message** per install, update and uninstall, so the project knows roughly how many servers use it. Sentinela itself (the web interface) never sends anything.
+
+- It is **off unless you say yes**. At the end of an interactive install you are asked `Send it? [y/N]`; the default is no.
+- Nothing is sent, and nothing is asked, when `SENTINELA_TELEMETRIA=0` is set or when there is no terminal (automation, CI, `cloud-init`).
+- Your answer is kept in `/etc/sentinela/telemetria` (`sim` or `nao`). Change your mind at any time: `echo nao | sudo tee /etc/sentinela/telemetria`.
+
+The whole message is a `POST https://apoio.nozaf.ao/v1/instalacoes` with this body:
+
+```json
+{"id":"0b5c6e1e-3c1f-4a52-9d9e-2f8a7b1c4d00","projecto":"sentinela","versao":"0.2.0","so":"ubuntu-24.04","arq":"amd64","evento":"instalar"}
+```
+
+`id` is a random UUID created on your server the first time you agree, stored in `/etc/sentinela/id`; it is not derived from anything about the machine. `evento` is `instalar`, `actualizar` or `desinstalar`. There is no IP address, host name, domain or configuration in the body, and the receiving service does not store the IP address the request comes from. You can read the code that sends it: the `telemetry` function in [`instalar.sh`](instalar.sh).
+
+## Supporting the project
+
+Sentinela is free, MIT-licensed and built in spare time. If it saves you time, you can support it at **[apoio.nozaf.ao](https://apoio.nozaf.ao/?projecto=sentinela)**, which also lists the current fundraising campaigns. Ideas, questions and show-and-tell go to [GitHub Discussions](https://github.com/Noz-AF-Angola/sentinela/discussions); the project site is [sentinela.nozaf.ao](https://sentinela.nozaf.ao).
+
 ## Development
 
 ```bash
@@ -215,6 +271,7 @@ Usa três fontes, todas opcionais: a API local (LAPI) com uma conta de máquina,
 
 ### Instalação rápida
 
+- **Um comando, no servidor do CrowdSec:** `curl -fsSL https://sentinela.nozaf.ao/instalar.sh | sudo bash`. O instalador encontra o CrowdSec (no host ou num contentor), pergunta antes de instalar o que faltar, verifica a assinatura OpenPGP e o SHA256 de tudo o que descarrega, escuta só em 127.0.0.1 (ou na VPN, se quiser) e cria a primeira conta com TOTP. Pode corrê-lo de novo sem risco. Depois: `sudo sentinela-admin update | user NOME | status | uninstall`.
 - **Docker Compose:** veja [`examples/docker-compose.yml`](examples/docker-compose.yml). Crie a máquina com `cscli machines add sentinela --password … -f /dev/null`, o ficheiro de utilizadores com `sentinela hash-password`, e ajuste as labels do Traefik.
 - **No host com systemd:** use [`examples/systemd`](examples/systemd) e a regra de sudo em [`examples/sudoers`](examples/sudoers).
 - **Experimentar sem CrowdSec:** `go run ./cmd/sentinela demo`.
@@ -228,6 +285,19 @@ A autenticação é obrigatória: utilizador e palavra-passe (bcrypt), com TOTP 
 - se só precisa de decisões, alertas e métricas, deixe `SENTINELA_CSCLI_MODE=none`.
 
 O modelo de ameaças completo está na secção [Security and threat model](#security-and-threat-model), em inglês.
+
+### Telemetria
+
+O instalador pode enviar **uma mensagem anónima** por instalação, actualização e desinstalação, para o projecto saber quantos servidores o usam. A interface web nunca envia nada.
+
+- Só é enviada se responder **sim** à pergunta no fim da instalação; a resposta por omissão é não.
+- Com `SENTINELA_TELEMETRIA=0`, ou sem terminal, não pergunta nem envia nada.
+- A mensagem é `{"id","projecto","versao","so","arq","evento"}`: um UUID aleatório guardado em `/etc/sentinela/id`, a versão, o sistema, a arquitectura e o evento. Não leva IP, nome da máquina nem configuração, e o serviço que a recebe não guarda o IP.
+- Para deixar de enviar: `echo nao | sudo tee /etc/sentinela/telemetria`.
+
+### Apoiar o projecto
+
+A Sentinela é gratuita e feita nas horas livres. Se lhe poupa tempo, pode apoiá-la em **[apoio.nozaf.ao](https://apoio.nozaf.ao/?projecto=sentinela)**, onde estão também as campanhas em curso. Ideias e perguntas: [GitHub Discussions](https://github.com/Noz-AF-Angola/sentinela/discussions). Site: [sentinela.nozaf.ao](https://sentinela.nozaf.ao).
 
 ### Licença
 

@@ -144,7 +144,18 @@ func New(baseURL, machineID, password string, hc *http.Client) (*Client, error) 
 	if hc == nil {
 		hc = &http.Client{Timeout: 20 * time.Second}
 	}
-	return &Client{base: u, machineID: machineID, password: password, hc: hc, userAgent: "sentinela", now: time.Now}, nil
+	return &Client{base: u, machineID: machineID, password: password, hc: hc, userAgent: "sentinela/dev", now: time.Now}, nil
+}
+
+// SetVersion sets the User-Agent to "sentinela/VERSION". CrowdSec rejects a
+// watcher login whose User-Agent is not in the "name/version" form, answering
+// "incorrect Username or Password" even when the credentials are right.
+func (c *Client) SetVersion(v string) {
+	v = strings.TrimSpace(v)
+	if v == "" || strings.ContainsAny(v, " /\t\r\n") {
+		v = "dev"
+	}
+	c.userAgent = "sentinela/" + v
 }
 
 // APIError is a non-2xx answer from the LAPI.
